@@ -2,7 +2,7 @@ import sqlite3
 import hashlib
 
 def init_db():
-    conn = sqlite3.connect("students.db")
+    conn = sqlite3.connect(":memory:")
     cursor = conn.cursor()
     cursor.execute('''CREATE TABLE IF NOT EXISTS students (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,7 +26,7 @@ def init_db():
     conn.close()
 
 def Verify_teacher(username, password):
-    conn = sqlite3.connect("students.db")
+    conn = sqlite3.connect(":memory:")
     cursor = conn.cursor()
     hashed_pass = hashlib.sha256(password.encode()).hexdigest() 
     cursor.execute("SELECT * FROM teachers WHERE username = ? AND password = ?",(username,hashed_pass))
@@ -35,7 +35,7 @@ def Verify_teacher(username, password):
     return teacher is not None
 
 def update_teacher_credentials(old_username, new_username, new_password):
-    conn = sqlite3.connect("students.db")
+    conn = sqlite3.connect(":memory:")
     cursor = conn.cursor()
     hashed_pass = hashlib.sha256(new_password.encode()).hexdigest()
     try:
@@ -49,7 +49,7 @@ def update_teacher_credentials(old_username, new_username, new_password):
         conn.close()
 
 def get_current_teacher():
-    conn = sqlite3.connect("students.db")
+    conn = sqlite3.connect(":memory:")
     cursor = conn.cursor()
     cursor.execute("SELECT username FROM teachers LIMIT 1")
     teacher = cursor.fetchone()
@@ -58,7 +58,7 @@ def get_current_teacher():
 
 
 def Agregate_columns(column_name):
-    conn = sqlite3.connect("students.db")
+    conn = sqlite3.connect(":memory:")
     cursor = conn.cursor()
     cursor.execute("PRAGMA table_info(students)")
     existing_columns = [row[1] for row in cursor.fetchall()]  
@@ -72,7 +72,7 @@ def Agregate_columns(column_name):
     conn.close()
 
 def get_table_columns():
-    conn = sqlite3.connect("students.db")
+    conn = sqlite3.connect(":memory:")
     cursor = conn.cursor()
     cursor.execute("PRAGMA table_info(students)")
     columns = [row[1] for row in cursor.fetchall()]
@@ -81,7 +81,7 @@ def get_table_columns():
 
 
 def get_students():
-    conn = sqlite3.connect("students.db")
+    conn = sqlite3.connect(":memory:")
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM students ORDER BY EvoPoints DESC")
     students = cursor.fetchall()
@@ -89,21 +89,21 @@ def get_students():
     return students
 
 def add_student(name):
-    conn = sqlite3.connect("students.db")
+    conn = sqlite3.connect(":memory:")
     cursor = conn.cursor()
     cursor.execute("INSERT INTO students (Nombre, EvoPoints) VALUES (?, 0)", (name,))
     conn.commit()
     conn.close()
 
 def update_points(student_id, points):
-    conn = sqlite3.connect("students.db")
+    conn = sqlite3.connect(":memory:")
     cursor = conn.cursor()
     cursor.execute("UPDATE students SET EvoPoints = ? WHERE id = ?", (points, student_id))
     conn.commit()
     conn.close()
 
 def clear_students():
-    conn = sqlite3.connect("students.db")
+    conn = sqlite3.connect(":memory:")
     cursor = conn.cursor()
     cursor.execute("DELETE FROM students")
     cursor.execute("UPDATE SQLITE_SEQUENCE SET SEQ=0 WHERE NAME='students'")  # Reinicia el autoincrement
