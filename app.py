@@ -1,5 +1,6 @@
 import streamlit as st
 import DB_work
+from data_processor import process_excel_file
 
 
 DB_work.init_db()
@@ -16,6 +17,34 @@ if "sort_config" not in st.session_state:
     }
 
 st.title("🏫 Sistema de Puntos para Estudiantes")
+if st.session_state.is_teacher:
+    with st.container():
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col2:
+            uploaded_file = st.file_uploader("", type=["xlsx"], label_visibility="collapsed")
+            
+            if uploaded_file:
+                # Procesar el archivo
+                student_names = process_excel_file(uploaded_file)
+                
+                if student_names:
+                    # Mostrar vista previa
+                    st.subheader(f"{len(student_names)} estudiantes encontrados")
+                    st.write(student_names[:5])  # Muestra solo los primeros 5 como ejemplo
+                    
+                    # Botón de actualización (grande y llamativo)
+                    group = st.selectbox("Grupo",["G-1","G-2"])
+                    if st.button("✨ Actualizar Base de Datos", type="primary", use_container_width=True):
+                        progress_bar = st.progress(0)
+                        
+                        for i, name in enumerate(student_names):
+                            DB_work.add_student(group,name)
+                            progress_bar.progress((i + 1) / len(student_names))
+                        
+                        st.balloons()
+                        st.success(f"¡Base de datos actualizada con {len(student_names)} nombres!")
+                else:
+                    st.error("No se encontraron nombres en el archivo")
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
@@ -42,6 +71,7 @@ with col4:
 
 if st.session_state.form == "add_student":
     with st.form("add_student_form"):
+        group = st.selectbox("Grupo",["G-1","G-2"])
         new_student = st.text_input("Nombre del estudiante")
         col1, col2 = st.columns(2)
         with col1:
@@ -52,9 +82,11 @@ if st.session_state.form == "add_student":
                 st.rerun()
 
         if submitted and new_student:
-            DB_work.add_student(new_student)
-            st.success(f"Estudiante {new_student} agregado con éxito.")
-            st.rerun()
+            if DB_work.add_student(group,new_student):
+                st.success(f"Estudiante {new_student} agregado con éxito.")
+                st.rerun()
+            else:
+                st.error("Ya existe un estudiante con ese nombre")
 
 elif st.session_state.form == "login":
     with st.form("login_form"):
@@ -139,13 +171,18 @@ if students:
     st.table(student_df)
 
     if st.session_state.is_teacher:
-        student_options = {s[1]: s[0] for s in students}
+        student_options = {s[2]: s[0] for s in students}
         selected_student = st.selectbox("Selecciona un estudiante", list(student_options.keys()))
         new_points = st.number_input("Nuevos puntos", min_value=0, step=1)
-        if st.button("Actualizar Puntos"):
+
+        if st.button("💱Actualizar Puntos"):
             DB_work.update_points(student_options[selected_student], new_points)
             st.success("Puntos actualizados.")
             st.rerun()
+        if st.button("😥Borrar estudiante"):
+            DB_work.remove_student(student_options[selected_student])
+            st.rerun()
+            
     else:
         st.warning("🔒 Inicia sesión como profesor para modificar puntos")
 else:

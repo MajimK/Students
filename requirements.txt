@@ -1,1 +1,2 @@
 streamlit
+openpyxl>=3.0.0

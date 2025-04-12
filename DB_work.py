@@ -6,6 +6,7 @@ def init_db():
     cursor = conn.cursor()
     cursor.execute('''CREATE TABLE IF NOT EXISTS students (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Grupo TEXT NOT NULL,
                         Nombre TEXT NOT NULL,
                         EvoPoints INTEGER
                     )''')
@@ -88,12 +89,20 @@ def get_students():
     conn.close()
     return students
 
-def add_student(name):
-    conn = sqlite3.connect(":memory:")
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO students (Nombre, EvoPoints) VALUES (?, 0)", (name,))
-    conn.commit()
-    conn.close()
+def add_student(group, name):
+    if name:
+        conn = sqlite3.connect(":memory:")
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM students WHERE Nombre = ?", (name,))
+        existing = cursor.fetchone()
+        
+        if not existing: 
+            cursor.execute("INSERT INTO students (Grupo, Nombre, EvoPoints) VALUES (?, ?, 0)", 
+                          (group, name))
+            conn.commit()
+            conn.close()
+            return True
+        return False
 
 def update_points(student_id, points):
     conn = sqlite3.connect(":memory:")
@@ -107,5 +116,19 @@ def clear_students():
     cursor = conn.cursor()
     cursor.execute("DELETE FROM students")
     cursor.execute("UPDATE SQLITE_SEQUENCE SET SEQ=0 WHERE NAME='students'")  # Reinicia el autoincrement
+    conn.commit()
+    conn.close()
+
+def remove_student(student_id):
+    conn = sqlite3.connect(":memory:")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM students WHERE id = ?",(student_id,))
+    conn.commit()
+    conn.close()
+
+def update_student(name,student_id):
+    conn = sqlite3.connect(":memory:")
+    cursor = conn.cursor()
+    cursor.execute("UPDATE students SET Nombre = ? WHERE id = ?", (name,student_id,))
     conn.commit()
     conn.close()
